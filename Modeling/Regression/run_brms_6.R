@@ -23,11 +23,11 @@ data <- rbind(data_pd, data_hc)
 data$group <- factor(data$group, levels = c("HC", "PD_Under", "PD_OK"))
 
 data <- data[data$pcor != 0, ]
-data <- data[data$learning != -1, ]
 
-data$learning <- factor(data$learning, levels = c(0, 1), labels = c("Early", "Late"))
-
-data <- data %>% filter(delay <= 7)
+data$pcor <- -1 / data$pcor
+data$ns <- -1 / data$ns
+data$iterseq <- -1 / data$iterseq
+data$delay <- -1 / data$delay
 
 # Scale
 data <- data %>%
@@ -39,8 +39,8 @@ data <- data %>%
   )
 
 ######################################################
-fit_3 <- brm(
-  formula = correct ~ group*learning*delay + (1 + group*learning*delay | subno),
+fit_6 <- brm(
+  formula = correct ~ group*ns*pcor + (1 + group*ns*pcor | subno),
   data = data,
   family = bernoulli(link = "logit"),
   prior = c(
@@ -54,6 +54,6 @@ fit_3 <- brm(
   warmup = 1000,
   seed = 123
 )
-save(fit_3, file = "fits/fit_3.RData")
+save(fit_6, file = "fits/fit_6.RData")
 
 print("Success!!!!!")

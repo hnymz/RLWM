@@ -11,40 +11,47 @@ options(mc.cores = parallel::detectCores())
 options(brms.backend = "rstan")
 setwd("/home/control/yimzha/Documents")
 
-data_pd <- read.csv("modeling.csv")
-data_pd <- data_pd[, -((ncol(data_pd) - 1):ncol(data_pd))]
-data_pd$group <- 1
-data_hc <- read.csv("modeling_hc.csv")
-data_hc$group <- 0
+data_pd <- read.csv("clean_pd_mds_med.csv")
+data_pd <- data_pd %>% select(-mds)
+data_pd <- na.omit(data_pd)
+data_pd$group <- ifelse(data_pd$med_motor_PAL < 2, 'PD_Under', 'PD_OK')
+data_pd <- data_pd[, !grepl("med", names(data_pd))] # remove all columns containing "med"
+
+data_hc <- read.csv("clean_hc.csv")
+data_hc$group <- 'HC'
 data <- rbind(data_pd, data_hc)
+data$group <- factor(data$group, levels = c("HC", "PD_Under", "PD_OK"))
+
+data <- data[data$pcor != 0, ]
+data <- data[data$learning != -1, ]
+data <- data[data$delay != -1, ]
+data <- data %>% filter(delay <= 7)
 
 # Scale
 data <- data %>%
-  group_by(subno)%>%
   mutate(
-    ns = as.vector(scale(ns, scale = TRUE, center = TRUE)),
     pcor = as.vector(scale(pcor, scale = TRUE, center = TRUE)),
-  ) %>%
-  ungroup()
-
-# Specify priors
-priors <- set_prior("normal(0, 2)", class = "b")
+    ns = as.vector(scale(ns, scale = TRUE, center = TRUE)),
+    iterseq = as.vector(scale(iterseq, scale = TRUE, center = TRUE)),
+    delay = as.vector(scale(delay, scale = TRUE, center = TRUE)),
+  )
 
 ######################################################
 fit_0 <- brm(
-  correct ~ group + (1 | subno),
+  formula = correct ~ group* (ns+pcor+delay) + (1 + ns+pcor+delay | subno),
   data = data,
-  family = bernoulli(),
-  chains = 4,
-  iter = 8000,
-  warmup = 3000,
-  control = list(adapt_delta = 0.99),
+  family = bernoulli(link = "logit"),
   prior = c(
     prior(normal(0, 1), class = "b"),
     prior(normal(0, 1), class = "Intercept"),
     prior(normal(0, 0.2), class = "sd")
-  )
+  ),
+  control = list(adapt_delta = 0.99),
+  chains = 4,
+  iter = 3000,
+  warmup = 1000,
+  seed = 123
 )
-save(fit_0, file = "fits/fit_0_norandomslope.RData")
+save(fit_0, file = "fits/fit_0.RData")
 
 print("Success!!!!!")

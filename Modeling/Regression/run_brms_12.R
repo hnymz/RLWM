@@ -26,21 +26,20 @@ data <- data[data$pcor != 0, ]
 data <- data[data$learning != -1, ]
 
 data$learning <- factor(data$learning, levels = c(0, 1), labels = c("Early", "Late"))
-
-data <- data %>% filter(delay <= 7)
+data$ns <- ifelse(data$ns %in% c(2, 3), "Low", "High")
+data$ns <- factor(data$ns, levels = c("Low", "High"))
 
 # Scale
 data <- data %>%
   mutate(
     pcor = as.vector(scale(pcor, scale = TRUE, center = TRUE)),
-    ns = as.vector(scale(ns, scale = TRUE, center = TRUE)),
     iterseq = as.vector(scale(iterseq, scale = TRUE, center = TRUE)),
     delay = as.vector(scale(delay, scale = TRUE, center = TRUE)),
   )
 
 ######################################################
-fit_3 <- brm(
-  formula = correct ~ group*learning*delay + (1 + group*learning*delay | subno),
+fit_12 <- brm(
+  formula = correct ~ group*learning*ns + (1 + group*learning*ns | subno),
   data = data,
   family = bernoulli(link = "logit"),
   prior = c(
@@ -54,6 +53,6 @@ fit_3 <- brm(
   warmup = 1000,
   seed = 123
 )
-save(fit_3, file = "fits/fit_3.RData")
+save(fit_12, file = "fits/fit_12.RData")
 
 print("Success!!!!!")

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for model in {1..5}; do
+for model in 0; do
   echo "Submitting run_brms_$model.R ..."
   sbatch \
     --job-name="brms_${model}" \

@@ -29,6 +29,11 @@ data$learning <- factor(data$learning, levels = c(0, 1), labels = c("Early", "La
 
 data <- data %>% filter(delay <= 7)
 
+data$pcor <- -1 / data$pcor
+data$ns <- -1 / data$ns
+data$iterseq <- -1 / data$iterseq
+data$delay <- -1 / data$delay
+
 # Scale
 data <- data %>%
   mutate(
@@ -39,7 +44,7 @@ data <- data %>%
   )
 
 ######################################################
-fit_3 <- brm(
+fit_7 <- brm(
   formula = correct ~ group*learning*delay + (1 + group*learning*delay | subno),
   data = data,
   family = bernoulli(link = "logit"),
@@ -54,6 +59,6 @@ fit_3 <- brm(
   warmup = 1000,
   seed = 123
 )
-save(fit_3, file = "fits/fit_3.RData")
+save(fit_7, file = "fits/fit_7.RData")
 
 print("Success!!!!!")
